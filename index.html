@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sourcing &amp; Screening Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Pre-Diligence Strategy Phase</p>
+    <h1 class="hero-title">Sourcing &amp; Screening Desk</h1>
+    <p class="hero-sub">A working desk for the M&amp;A strategy phase — build the acquisition thesis, screen the market, and hold a first-pass view on every target before due diligence opens.</p>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Main views">
+  <div class="tabs-inner">
+    <button class="tab" id="tab-framework" role="tab" aria-selected="true" aria-controls="view-framework">01 — Framework Guide</button>
+    <button class="tab" id="tab-dashboard" role="tab" aria-selected="false" aria-controls="view-dashboard">02 — Target Dashboard</button>
+  </div>
+</nav>
+
+<main class="shell">
+
+  <!-- ============ FRAMEWORK VIEW ============ -->
+  <section id="view-framework" class="view" role="tabpanel" aria-labelledby="tab-framework">
+    <div class="panel intro-panel">
+      <h2>The Four-Step Strategy Phase</h2>
+      <p>Before a target ever sees a data room, the acquirer works through four connected steps. Each step's output becomes the next step's input — and each one has a mirror panel on the Target Dashboard where you track it live, target by target.</p>
+    </div>
+
+    <ol class="timeline" id="framework-timeline">
+      <!-- steps injected by script.js -->
+    </ol>
+  </section>
+
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <section id="view-dashboard" class="view" role="tabpanel" aria-labelledby="tab-dashboard" hidden>
+
+    <div class="panel pills-panel">
+      <h2 class="panel-heading">Pipeline at a Glance</h2>
+      <div class="pills" id="stage-pills"></div>
+    </div>
+
+    <div class="panel add-panel">
+      <h2 class="panel-heading">Add a Target</h2>
+      <form id="add-target-form" class="add-form">
+        <div class="field">
+          <label for="input-name">Company name</label>
+          <input type="text" id="input-name" name="name" required maxlength="80" placeholder="e.g. Northfield Componentry Ltd.">
+        </div>
+        <div class="field">
+          <label for="input-sector">Sector</label>
+          <input type="text" id="input-sector" name="sector" required maxlength="60" placeholder="e.g. Industrial fasteners">
+        </div>
+        <button type="submit" class="btn btn-primary">Add target</button>
+      </form>
+    </div>
+
+    <div class="panel filter-panel">
+      <label for="stage-filter" class="filter-label">Filter by stage</label>
+      <select id="stage-filter">
+        <option value="all">All stages</option>
+      </select>
+    </div>
+
+    <div id="targets-list" class="targets-list"></div>
+
+    <div id="empty-state" class="empty-state panel" hidden>
+      <h2>No targets yet</h2>
+      <p>Add your first target above to start screening. Each one gets its own pipeline stage, a four-step evaluation mirroring the framework guide, and a radar profile you can compare across the shortlist.</p>
+    </div>
+
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Sourcing &amp; Screening Desk — strategy-phase working tool. All data stays in this browser.</p>
+</footer>
+
+<template id="target-card-template">
+  <article class="target-card" data-role="card">
+    <header class="target-card-head" data-role="head">
+      <button class="target-expand-btn" data-role="expand-btn" aria-expanded="false">
+        <span class="expand-icon" aria-hidden="true">+</span>
+      </button>
+      <div class="target-head-main">
+        <div class="target-head-row">
+          <input class="target-name-input" data-role="name" maxlength="80" aria-label="Company name">
+          <input class="target-sector-input" data-role="sector" maxlength="60" aria-label="Sector">
+        </div>
+        <div class="target-head-row target-head-controls">
+          <label class="inline-label">Stage
+            <select data-role="stage" aria-label="Pipeline stage"></select>
+          </label>
+          <label class="inline-label decision-field" data-role="decision-wrap" hidden>Decision
+            <select data-role="decision" aria-label="Decision"></select>
+          </label>
+          <span class="stage-framework-link" data-role="stage-hint"></span>
+        </div>
+      </div>
+      <div class="target-radar" data-role="radar"></div>
+      <button class="btn btn-danger btn-delete" data-role="delete" aria-label="Delete target">Delete</button>
+    </header>
+
+    <div class="target-detail" data-role="detail" hidden>
+
+      <section class="detail-step" data-step="1">
+        <h3 class="detail-step-title"><span class="step-num">1</span> Motives &amp; Strategic Fit</h3>
+        <div class="motives-grid" data-role="motives"></div>
+        <div class="score-row">
+          <label class="score-label">Strategic fit score
+            <input type="range" min="0" max="5" step="1" data-role="fitScore">
+            <output data-role="fitScoreOut"></output>
+          </label>
+        </div>
+        <label class="notes-label">Notes
+          <textarea data-role="step1notes" rows="2" placeholder="Why does / doesn't this fit the thesis from Step 1?"></textarea>
+        </label>
+      </section>
+
+      <section class="detail-step" data-step="2">
+        <h3 class="detail-step-title"><span class="step-num">2</span> Market &amp; Industry Screen</h3>
+        <div class="score-row">
+          <label class="score-label">Market attractiveness score
+            <input type="range" min="0" max="5" step="1" data-role="marketScore">
+            <output data-role="marketScoreOut"></output>
+          </label>
+        </div>
+        <label class="notes-label">Notes
+          <textarea data-role="step2notes" rows="2" placeholder="Industry structure, competitive position, why shortlist / eliminate?"></textarea>
+        </label>
+      </section>
+
+      <section class="detail-step" data-step="3">
+        <h3 class="detail-step-title"><span class="step-num">3</span> Preliminary Valuation &amp; Synergies</h3>
+        <div class="valuation-grid">
+          <label class="field-inline">EV low (€m)
+            <input type="number" step="0.1" data-role="evLow" class="mono-input">
+          </label>
+          <label class="field-inline">EV high (€m)
+            <input type="number" step="0.1" data-role="evHigh" class="mono-input">
+          </label>
+          <label class="field-inline">Synergy estimate (€m)
+            <input type="number" step="0.1" data-role="synergy" class="mono-input">
+          </label>
+        </div>
+        <div class="score-row">
+          <label class="score-label">Valuation appeal score
+            <input type="range" min="0" max="5" step="1" data-role="valueScore">
+            <output data-role="valueScoreOut"></output>
+          </label>
+        </div>
+        <label class="notes-label">Notes
+          <textarea data-role="step3notes" rows="2" placeholder="Comparable basis, affordability against balance sheet..."></textarea>
+        </label>
+      </section>
+
+      <section class="detail-step" data-step="4">
+        <h3 class="detail-step-title"><span class="step-num">4</span> SWOT, Stakeholders &amp; Risk</h3>
+        <div class="swot-grid">
+          <label class="swot-field swot-s">Strengths
+            <textarea data-role="swotS" rows="2"></textarea>
+          </label>
+          <label class="swot-field swot-w">Weaknesses
+            <textarea data-role="swotW" rows="2"></textarea>
+          </label>
+          <label class="swot-field swot-o">Opportunities
+            <textarea data-role="swotO" rows="2"></textarea>
+          </label>
+          <label class="swot-field swot-t">Threats
+            <textarea data-role="swotT" rows="2"></textarea>
+          </label>
+        </div>
+        <label class="notes-label">Stakeholder notes
+          <textarea data-role="stakeholderNotes" rows="2" placeholder="Owners, board, regulators, works councils, key customers..."></textarea>
+        </label>
+        <div class="risk-row">
+          <span class="risk-label">Risk level</span>
+          <div class="risk-toggle" data-role="riskToggle">
+            <button type="button" data-risk="Low">Low</button>
+            <button type="button" data-risk="Medium">Medium</button>
+            <button type="button" data-risk="High">High</button>
+          </div>
+        </div>
+        <label class="notes-label">Risk notes
+          <textarea data-role="riskNotes" rows="2" placeholder="What would kill the deal, and is it fixable in due diligence?"></textarea>
+        </label>
+      </section>
+
+      <section class="detail-step general-notes-step">
+        <h3 class="detail-step-title">General Notes</h3>
+        <textarea data-role="generalNotes" rows="2" placeholder="Anything else worth flagging about this target..."></textarea>
+      </section>
+
+    </div>
+  </article>
+</template>
+
+<script src="script.js"></script>
+</body>
+</html>
