@@ -121,21 +121,22 @@
 
   /* -------------------------------------------------------------- tabs */
 
-  var tabFramework = document.getElementById('tab-framework');
-  var tabDashboard = document.getElementById('tab-dashboard');
-  var viewFramework = document.getElementById('view-framework');
-  var viewDashboard = document.getElementById('view-dashboard');
+  var VIEWS = ['framework', 'dashboard', 'diagnostic'];
 
   function showView(name) {
-    var isFramework = name === 'framework';
-    viewFramework.hidden = !isFramework;
-    viewDashboard.hidden = isFramework;
-    tabFramework.setAttribute('aria-selected', String(isFramework));
-    tabDashboard.setAttribute('aria-selected', String(!isFramework));
+    VIEWS.forEach(function (v) {
+      var tab = document.getElementById('tab-' + v);
+      var view = document.getElementById('view-' + v);
+      if (!tab || !view) return;
+      view.hidden = v !== name;
+      tab.setAttribute('aria-selected', String(v === name));
+    });
   }
 
-  tabFramework.addEventListener('click', function () { showView('framework'); });
-  tabDashboard.addEventListener('click', function () { showView('dashboard'); });
+  VIEWS.forEach(function (v) {
+    var tab = document.getElementById('tab-' + v);
+    if (tab) tab.addEventListener('click', function () { showView(v); });
+  });
 
   /* --------------------------------------------------------- framework */
 
@@ -210,6 +211,15 @@
         if (select) select.value = state.filterStage;
       });
       connectRow.appendChild(jumpBtn);
+
+      if (step.num === 1) {
+        var diagBtn = document.createElement('button');
+        diagBtn.type = 'button';
+        diagBtn.className = 'btn btn-primary';
+        diagBtn.textContent = 'Run the rationale diagnostic';
+        diagBtn.addEventListener('click', function () { showView('diagnostic'); });
+        connectRow.appendChild(diagBtn);
+      }
 
       card.appendChild(connectRow);
       li.appendChild(card);
