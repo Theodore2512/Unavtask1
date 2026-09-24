@@ -23,6 +23,7 @@
   <div class="tabs-inner">
     <button class="tab" id="tab-framework" role="tab" aria-selected="true" aria-controls="view-framework">01 — Framework Guide</button>
     <button class="tab" id="tab-dashboard" role="tab" aria-selected="false" aria-controls="view-dashboard">02 — Target Dashboard</button>
+    <button class="tab" id="tab-diagnostic" role="tab" aria-selected="false" aria-controls="view-diagnostic">03 — Rationale Diagnostic</button>
   </div>
 </nav>
 
@@ -77,6 +78,11 @@
       <p>Add your first target above to start screening. Each one gets its own pipeline stage, a four-step evaluation mirroring the framework guide, and a radar profile you can compare across the shortlist.</p>
     </div>
 
+  </section>
+
+  <!-- ============ DIAGNOSTIC VIEW ============ -->
+  <section id="view-diagnostic" class="view" role="tabpanel" aria-labelledby="tab-diagnostic" hidden>
+    <div id="diagnostic-root"><!-- rendered by diagnostic.js --></div>
   </section>
 
 </main>
@@ -205,5 +211,6 @@
 </template>
 
 <script src="script.js"></script>
+<script src="diagnostic.js"></script>
 </body>
 </html>
