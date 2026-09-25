@@ -19,7 +19,7 @@ export async function payOrder(_prev: FormState, formData: FormData): Promise<Fo
     .select(
       `id, status, amount_cents, fee_cents, hold_expires_at, user_id,
        ticket_type:ticket_types!inner (name),
-       event:events!inner (title, slug, association:associations!inner (stripe_account_id))`,
+       event:events!inner (title, slug, association:associations!inner (stripe_account_id, stripe_charges_enabled))`,
     )
     .eq("id", orderId)
     .eq("user_id", user.id)
@@ -41,6 +41,7 @@ export async function payOrder(_prev: FormState, formData: FormData): Promise<Fo
       ticketTypeName: order.ticket_type.name,
       customerEmail: user.email ?? "",
       stripeAccountId: order.event.association.stripe_account_id,
+      stripeChargesEnabled: order.event.association.stripe_charges_enabled,
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Paiement impossible." };

@@ -12,7 +12,7 @@ Shotgun équitable, billetterie et organisation d'événements pour les BDE, ass
 | --- | --- |
 | **Auth étudiants** | Inscription (prénom, nom, email, mot de passe), choix **ville → école/campus** filtré, vérification du **domaine email de l'école** (côté serveur *et* en SQL), confirmation email Supabase. |
 | **Rôles** | `student` → `organizer` (automatique à la création d'une asso) → `admin`. Les membres d'asso ont un rôle `owner` / `admin` / `staff`. |
-| **Espace asso** | Profil (logo via Supabase Storage, description, Instagram/TikTok/LinkedIn/site), compte Stripe Connect. |
+| **Espace asso** | Profil (logo via Supabase Storage, description, Instagram/TikTok/LinkedIn/site), **onboarding Stripe Connect Express** en un clic. |
 | **Événements** | Titre, description, visuel, lieu, dates, quota total, brouillon/publication/annulation. |
 | **Billetterie** | Tarif standard, **tarif adhérent protégé par code**, **événement gratuit**. Aperçu de la commission 3 %. |
 | **Accès** | « Mon école uniquement » ou **inter-écoles avec quotas par école**. |
@@ -20,7 +20,8 @@ Shotgun équitable, billetterie et organisation d'événements pour les BDE, ass
 | **Paiement** | `PAYMENT_PROVIDER=mock` (simulé) ou `stripe` (Checkout + Connect, `application_fee_amount` = 3 %, webhook, remboursement auto si paiement tardif sur un événement complet). |
 | **Billet** | QR code unique (jeton 64 caractères hex), page « Mes billets ». |
 | **Dashboard orga** | Participants **en temps réel** (Supabase Realtime), statut payé/gratuit/annulé, recettes, annulation d'un billet, **export CSV d'émargement** (Excel FR). |
-| **Admin** | Statistiques, validation des associations. |
+| **Contrôle d'entrée** | Scanner QR à la caméra du téléphone (+ saisie du code court à 8 caractères), écran vert / orange « déjà scanné » / rouge, compteur d'entrées. |
+| **Admin** | Statistiques, validation des associations (seul un admin peut vérifier une asso). |
 
 ---
 
@@ -46,6 +47,7 @@ Les écritures sur `orders` / `tickets` sont **impossibles en direct** (aucune p
 taz/
 ├── supabase/
 │   ├── migrations/20260925000000_init.sql   # tables, fonctions, RLS, storage, realtime
+│   ├── migrations/20260925010000_checkin_and_stripe.sql  # scan d'entrée, garde-fous asso/Stripe
 │   └── seed.sql                              # villes + écoles/campus + domaines email
 ├── src/
 │   ├── proxy.ts                              # (ex-middleware) refresh session + routes protégées
@@ -60,7 +62,8 @@ taz/
 │   │   ├── dashboard/                        # espace organisateur
 │   │   │   ├── associations/new | [id]       # création / profil asso
 │   │   │   ├── associations/[id]/events/new  # création d'événement + billetterie + quotas
-│   │   │   └── events/[id]/                  # participants temps réel, statut, annulation
+│   │   │   ├── associations/[id]/stripe/     # onboarding Stripe Connect (refresh / return)
+│   │   │   └── events/[id]/ & [id]/scan/     # participants temps réel, scanner QR d'entrée
 │   │   ├── admin/                            # validation des assos
 │   │   └── api/
 │   │       ├── events/[id]/export/           # CSV d'émargement
@@ -79,7 +82,7 @@ taz/
 ### 1. Supabase
 
 1. Crée un projet sur [supabase.com](https://supabase.com).
-2. **SQL Editor** → exécute `supabase/migrations/20260925000000_init.sql`, puis `supabase/seed.sql`.
+2. **SQL Editor** → exécute, dans l'ordre, les fichiers de `supabase/migrations/`, puis `supabase/seed.sql`.
    *(ou avec la CLI : `npx supabase link --project-ref <ref>` puis `npx supabase db push` et exécuter le seed)*
 3. **Authentication → Providers → Email** : active **« Confirm email »** (c'est ce qui prouve que l'étudiant possède l'adresse de son école).
 4. **Authentication → URL Configuration** :
@@ -111,9 +114,14 @@ Scripts utiles : `npm run typecheck`, `npm run lint`, `npm run build`, `npm run 
 
 ### 4. Passer au vrai paiement Stripe
 
-1. `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY=sk_…`.
-2. Webhook Stripe → `https://ton-domaine/api/stripe/webhook`, événements `checkout.session.completed` et `checkout.session.expired` → copie le secret dans `STRIPE_WEBHOOK_SECRET`.
-3. Chaque asso doit avoir un compte **Stripe Connect** (`acct_…`) renseigné dans son profil. L'onboarding Connect automatisé (Account Links) est la prochaine étape.
+1. Active **Stripe Connect** sur ton compte Stripe (plateforme, comptes **Express**, pays FR).
+2. `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY=sk_…`.
+3. Crée **deux** endpoints webhook vers `https://ton-domaine/api/stripe/webhook` :
+   - *Compte* : `checkout.session.completed`, `checkout.session.expired` ;
+   - *Comptes connectés* : `account.updated`.
+   Copie leurs secrets dans `STRIPE_WEBHOOK_SECRET` et `STRIPE_CONNECT_WEBHOOK_SECRET`.
+4. Chaque asso clique sur **« Connecter Stripe »** dans son dashboard, remplit le formulaire Stripe (IBAN, identité), puis revient sur TAZ : le statut « Stripe actif » s'affiche.
+   Tant qu'il n'est pas actif, les événements payants ne peuvent pas être publiés.
 
 Modèle économique : l'étudiant paie le prix affiché ; TAZ prélève **3 %** (`application_fee_amount`), le reste est viré à l'asso. Le taux est défini dans `src/lib/pricing.ts` **et** dans `reserve_ticket()` en SQL : garde-les alignés.
 
@@ -125,13 +133,13 @@ Modèle économique : l'étudiant paie le prix affiché ; TAZ prélève **3 %** 
 - Un utilisateur ne peut pas modifier son rôle, son statut vérifié, son école ni son email (trigger).
 - Le code adhérent vit dans `event_secrets`, illisible par les étudiants.
 - La liste des participants n'est accessible que via `get_event_attendees()` (organisateurs de l'événement uniquement).
+- Une asso ne peut ni s'auto-vérifier ni changer son compte Stripe (trigger) ; un billet ne se scanne que pour son propre événement.
 - Storage : upload autorisé seulement dans le dossier `<association_id>/` des membres de l'asso.
 - Export CSV protégé contre l'injection de formules Excel.
 
 ## Prochaines étapes suggérées
 
-- Onboarding Stripe Connect (Account Links) depuis le dashboard asso.
-- Page de scan QR pour l'entrée (la fonction SQL `check_in_ticket()` est déjà prête).
+- Tableau de bord des virements Stripe (login link Express) et remboursements depuis TAZ.
 - Édition d'un événement publié, gestion des membres staff d'une asso.
 - File d'attente virtuelle en amont (ex. Vercel Edge + Upstash) pour les très gros shotguns.
 - Emails transactionnels (billet envoyé par mail).

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Download, ExternalLink, X } from "lucide-react";
+import { Download, ExternalLink, ScanLine, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,6 +80,11 @@ export default async function EventDashboardPage({ params }: PageProps<"/dashboa
           <Button variant="outline" size="sm" asChild>
             <Link href={`/events/${event.slug}`}>
               <ExternalLink /> Page publique
+            </Link>
+          </Button>
+          <Button size="sm" asChild>
+            <Link href={`/dashboard/events/${event.id}/scan`}>
+              <ScanLine /> Scanner les billets
             </Link>
           </Button>
           <Button variant="outline" size="sm" asChild>

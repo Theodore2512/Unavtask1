@@ -16,6 +16,10 @@ export const env = {
   paymentProvider: (): "mock" | "stripe" =>
     process.env.PAYMENT_PROVIDER === "stripe" ? "stripe" : "mock",
   stripeSecretKey: () => required("STRIPE_SECRET_KEY", process.env.STRIPE_SECRET_KEY),
-  stripeWebhookSecret: () =>
-    required("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET),
+  /** Secrets des endpoints webhook "compte" et (optionnel) "comptes connectés". */
+  stripeWebhookSecrets: () =>
+    [
+      required("STRIPE_WEBHOOK_SECRET", process.env.STRIPE_WEBHOOK_SECRET),
+      process.env.STRIPE_CONNECT_WEBHOOK_SECRET,
+    ].filter((s): s is string => Boolean(s)),
 };

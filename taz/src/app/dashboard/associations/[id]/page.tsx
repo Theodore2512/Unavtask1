@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireProfile } from "@/lib/auth";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { env } from "@/lib/env";
 import { updateAssociation } from "../actions";
 import { AssociationForm } from "../association-form";
+import { StripeCard } from "./stripe-card";
 
 export const metadata: Metadata = { title: "Mon association" };
 
@@ -17,8 +19,10 @@ const STATUS_LABEL = { draft: "Brouillon", published: "Publié", cancelled: "Ann
 
 export default async function AssociationDashboardPage({
   params,
+  searchParams,
 }: PageProps<"/dashboard/associations/[id]">) {
   const { id } = await params;
+  const { stripe } = await searchParams;
   const profile = await requireProfile(`/dashboard/associations/${id}`);
   const supabase = await createClient();
 
@@ -90,18 +94,28 @@ export default async function AssociationDashboardPage({
         )}
       </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profil de l&apos;association</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AssociationForm
-            action={updateAssociation}
-            association={association}
-            submitLabel="Enregistrer"
-          />
-        </CardContent>
-      </Card>
+      <div className="grid content-start gap-6">
+        <StripeCard
+          associationId={association.id}
+          accountId={association.stripe_account_id}
+          chargesEnabled={association.stripe_charges_enabled}
+          canManage={profile.role === "admin" || membership?.role === "owner" || membership?.role === "admin"}
+          paymentProvider={env.paymentProvider()}
+          returnStatus={typeof stripe === "string" ? stripe : null}
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Profil de l&apos;association</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssociationForm
+              action={updateAssociation}
+              association={association}
+              submitLabel="Enregistrer"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

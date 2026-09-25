@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { toUserMessage } from "@/lib/errors";
 import { getOptionalString, getString, type FormState } from "@/lib/form";
+import { createConnectOnboardingUrl } from "@/lib/payments";
 import { uploadAssociationImage } from "@/lib/storage";
 import { randomSuffix, slugify } from "@/lib/utils";
 
@@ -70,7 +71,6 @@ export async function updateAssociation(_prev: FormState, formData: FormData): P
     .from("associations")
     .update({
       ...parsed.data,
-      stripe_account_id: getOptionalString(formData, "stripe_account_id"),
       ...(logo.url ? { logo_url: logo.url } : {}),
     })
     .eq("id", id);
@@ -78,4 +78,17 @@ export async function updateAssociation(_prev: FormState, formData: FormData): P
 
   revalidatePath(`/dashboard/associations/${id}`);
   return { success: "Profil de l'association mis à jour." };
+}
+
+export async function startStripeOnboarding(formData: FormData): Promise<void> {
+  const id = getString(formData, "id");
+  const supabase = await createClient();
+  const [{ data: isManager }, { data: userData }] = await Promise.all([
+    supabase.rpc("is_association_manager", { p_association_id: id }),
+    supabase.auth.getUser(),
+  ]);
+  if (!isManager) redirect(`/dashboard/associations/${id}`);
+
+  const url = await createConnectOnboardingUrl(id, userData.user?.email);
+  redirect(url);
 }

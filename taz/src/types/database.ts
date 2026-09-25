@@ -56,6 +56,7 @@ export type Database = {
           school_id: string
           slug: string
           stripe_account_id: string | null
+          stripe_charges_enabled: boolean
           tiktok_url: string | null
           updated_at: string
           verified: boolean
@@ -73,6 +74,7 @@ export type Database = {
           school_id: string
           slug: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
           tiktok_url?: string | null
           updated_at?: string
           verified?: boolean
@@ -90,6 +92,7 @@ export type Database = {
           school_id?: string
           slug?: string
           stripe_account_id?: string | null
+          stripe_charges_enabled?: boolean
           tiktok_url?: string | null
           updated_at?: string
           verified?: boolean
@@ -506,24 +509,16 @@ export type Database = {
     Functions: {
       cancel_pending_order: { Args: { p_order_id: string }; Returns: undefined }
       check_in_ticket: {
-        Args: { p_qr_token: string }
+        Args: { p_code: string; p_event_id: string }
         Returns: {
-          checked_in_at: string | null
-          created_at: string
-          event_id: string
-          id: string
-          order_id: string
-          qr_token: string
-          status: Database["public"]["Enums"]["ticket_status"]
-          ticket_type_id: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "tickets"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+          checked_in_at: string
+          first_name: string
+          last_name: string
+          result: Database["public"]["Enums"]["check_in_result"]
+          school_name: string
+          ticket_id: string
+          ticket_type: string
+        }[]
       }
       confirm_order_payment: {
         Args: { p_order_id: string; p_stripe_session_id?: string }
@@ -644,6 +639,7 @@ export type Database = {
     }
     Enums: {
       access_mode: "school_only" | "inter_school"
+      check_in_result: "ok" | "already_used" | "cancelled" | "not_found"
       event_status: "draft" | "published" | "cancelled"
       member_role: "owner" | "admin" | "staff"
       order_status: "pending" | "paid" | "free" | "cancelled" | "expired"
@@ -778,6 +774,7 @@ export const Constants = {
   public: {
     Enums: {
       access_mode: ["school_only", "inter_school"],
+      check_in_result: ["ok", "already_used", "cancelled", "not_found"],
       event_status: ["draft", "published", "cancelled"],
       member_role: ["owner", "admin", "staff"],
       order_status: ["pending", "paid", "free", "cancelled", "expired"],

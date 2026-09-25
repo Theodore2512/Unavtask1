@@ -19,7 +19,6 @@ type Association = Pick<
   | "tiktok_url"
   | "linkedin_url"
   | "website_url"
-  | "stripe_account_id"
 >;
 
 export function AssociationForm({
@@ -73,21 +72,6 @@ export function AssociationForm({
           <Input id="website_url" name="website_url" type="url" placeholder="https://…" defaultValue={association?.website_url ?? ""} />
         </Field>
       </div>
-
-      {association && (
-        <Field
-          label="Compte Stripe Connect"
-          htmlFor="stripe_account_id"
-          hint="Identifiant acct_… pour recevoir les paiements (onboarding Stripe à brancher)."
-        >
-          <Input
-            id="stripe_account_id"
-            name="stripe_account_id"
-            placeholder="acct_…"
-            defaultValue={association.stripe_account_id ?? ""}
-          />
-        </Field>
-      )}
 
       <FormMessage state={state} />
       <SubmitButton pending={pending} pendingLabel="Enregistrement…">{submitLabel}</SubmitButton>

@@ -25,6 +25,7 @@ export type CheckoutInput = {
   ticketTypeName: string;
   customerEmail: string;
   stripeAccountId: string | null;
+  stripeChargesEnabled: boolean;
 };
 
 /** Crée la session de paiement et renvoie l'URL vers laquelle rediriger. */
@@ -41,8 +42,8 @@ export async function createCheckoutUrl(input: CheckoutInput): Promise<string> {
     return `${site}/checkout/${input.orderId}/success`;
   }
 
-  if (!input.stripeAccountId) {
-    throw new Error("L'association n'a pas encore connecté son compte Stripe.");
+  if (!input.stripeAccountId || !input.stripeChargesEnabled) {
+    throw new Error("L'association n'a pas encore finalisé son compte Stripe.");
   }
 
   const session = await stripe().checkout.sessions.create({
@@ -77,4 +78,59 @@ export async function createCheckoutUrl(input: CheckoutInput): Promise<string> {
 
   if (!session.url) throw new Error("Session Stripe sans URL");
   return session.url;
+}
+
+// ---------------------------------------------------------------------------
+// Stripe Connect (Express) : onboarding des associations
+// ---------------------------------------------------------------------------
+
+/** Crée le compte Connect de l'asso si besoin et renvoie le lien d'onboarding Stripe. */
+export async function createConnectOnboardingUrl(
+  associationId: string,
+  email: string | undefined,
+): Promise<string> {
+  const admin = createAdminClient();
+  const { data: association, error } = await admin
+    .from("associations")
+    .select("id, name, stripe_account_id")
+    .eq("id", associationId)
+    .single();
+  if (error || !association) throw new Error("Association introuvable");
+
+  let accountId = association.stripe_account_id;
+  if (!accountId) {
+    const account = await stripe().accounts.create({
+      type: "express",
+      country: "FR",
+      email,
+      capabilities: {
+        card_payments: { requested: true },
+        transfers: { requested: true },
+      },
+      business_profile: { name: association.name },
+      metadata: { association_id: association.id },
+    });
+    accountId = account.id;
+    await admin.from("associations").update({ stripe_account_id: accountId }).eq("id", association.id);
+  }
+
+  const site = env.siteUrl();
+  const link = await stripe().accountLinks.create({
+    account: accountId,
+    type: "account_onboarding",
+    refresh_url: `${site}/dashboard/associations/${association.id}/stripe`,
+    return_url: `${site}/dashboard/associations/${association.id}/stripe/return`,
+  });
+  return link.url;
+}
+
+/** Relit le compte Stripe et met à jour `stripe_charges_enabled`. */
+export async function syncConnectStatus(stripeAccountId: string): Promise<boolean> {
+  const account = await stripe().accounts.retrieve(stripeAccountId);
+  const enabled = Boolean(account.charges_enabled);
+  await createAdminClient()
+    .from("associations")
+    .update({ stripe_charges_enabled: enabled })
+    .eq("stripe_account_id", stripeAccountId);
+  return enabled;
 }

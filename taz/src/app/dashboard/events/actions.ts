@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { toUserMessage } from "@/lib/errors";
+import { env } from "@/lib/env";
 import { parisLocalToIso } from "@/lib/format";
 import { getCents, getInt, getOptionalString, getString, type FormState } from "@/lib/form";
 import { uploadAssociationImage } from "@/lib/storage";
@@ -42,6 +43,21 @@ const eventSchema = z
       }
     }
   });
+
+/** En mode Stripe, un événement payant ne peut être publié que si l'asso encaisse. */
+async function mustConnectStripe(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  associationId: string,
+  hasPaidTickets: boolean,
+): Promise<boolean> {
+  if (env.paymentProvider() !== "stripe" || !hasPaidTickets) return false;
+  const { data } = await supabase
+    .from("associations")
+    .select("stripe_charges_enabled")
+    .eq("id", associationId)
+    .single();
+  return !data?.stripe_charges_enabled;
+}
 
 export async function createEvent(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = eventSchema.safeParse({
@@ -151,6 +167,11 @@ export async function createEvent(_prev: FormState, formData: FormData): Promise
   }
 
   if (v.status === "published") {
+    if (await mustConnectStripe(supabase, v.association_id, !v.is_free)) {
+      // L'événement existe déjà en brouillon : on quitte le formulaire pour éviter un doublon.
+      revalidatePath(`/dashboard/associations/${v.association_id}`);
+      redirect(`/dashboard/associations/${v.association_id}?stripe=required`);
+    }
     await supabase.from("events").update({ status: "published" }).eq("id", event.id);
   }
 
@@ -162,6 +183,18 @@ export async function setEventStatus(formData: FormData): Promise<void> {
   const id = getString(formData, "id");
   const status = z.enum(["draft", "published", "cancelled"]).parse(getString(formData, "status"));
   const supabase = await createClient();
+  if (status === "published") {
+    const { data: event } = await supabase
+      .from("events")
+      .select("association_id, ticket_types (price_cents)")
+      .eq("id", id)
+      .single();
+    if (!event) return;
+    const hasPaid = event.ticket_types.some((t) => t.price_cents > 0);
+    if (await mustConnectStripe(supabase, event.association_id, hasPaid)) {
+      redirect(`/dashboard/associations/${event.association_id}?stripe=required`);
+    }
+  }
   await supabase.from("events").update({ status }).eq("id", id);
   revalidatePath(`/dashboard/events/${id}`);
   revalidatePath("/");
