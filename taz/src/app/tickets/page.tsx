@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CalendarDays, MapPin, Ticket } from "lucide-react";
+import { Reveal } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireProfile } from "@/lib/auth";
@@ -35,8 +36,8 @@ export default async function TicketsPage() {
         </div>
       ) : (
         <ul className="grid gap-3">
-          {tickets.map((t) => (
-            <li key={t.id}>
+          {tickets.map((t, i) => (
+            <Reveal as="li" key={t.id} delay={Math.min(i, 5) * 60}>
               <Link
                 href={`/tickets/${t.id}`}
                 className="bg-card flex items-center justify-between gap-4 rounded-xl border p-4 transition hover:shadow-md"
@@ -57,13 +58,21 @@ export default async function TicketsPage() {
                 </div>
                 <Badge
                   variant={
-                    t.status === "valid" ? "success" : t.status === "used" ? "secondary" : "destructive"
+                    t.status === "valid"
+                      ? "success"
+                      : t.status === "used"
+                        ? "secondary"
+                        : "destructive"
                   }
                 >
-                  {t.status === "valid" ? t.ticket_type.name : t.status === "used" ? "Utilisé" : "Annulé"}
+                  {t.status === "valid"
+                    ? t.ticket_type.name
+                    : t.status === "used"
+                      ? "Utilisé"
+                      : "Annulé"}
                 </Badge>
               </Link>
-            </li>
+            </Reveal>
           ))}
         </ul>
       )}

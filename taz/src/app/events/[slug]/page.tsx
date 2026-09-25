@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Briefcase, CalendarDays, Camera, Globe, MapPin, School, Users } from "lucide-react";
 import { Countdown } from "@/components/countdown";
+import { CountUp } from "@/components/motion/count-up";
+import { Reveal } from "@/components/motion/reveal";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -78,11 +80,7 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
   else if (!shotgunOpen) disabledReason = "Shotgun verrouillé";
   else if (eventRemaining <= 0) disabledReason = "Complet";
   else if (profile && !profile.student_verified) disabledReason = "Statut étudiant non vérifié";
-  else if (
-    profile &&
-    event.access_mode === "school_only" &&
-    profile.school_id !== asso.school_id
-  )
+  else if (profile && event.access_mode === "school_only" && profile.school_id !== asso.school_id)
     disabledReason = `Réservé à ${asso.school.name} ${asso.school.campus}`;
 
   return (
@@ -97,7 +95,10 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
       <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="grid content-start gap-6">
           <div className="grid gap-3">
-            <Link href={`/associations/${asso.slug}`} className="flex items-center gap-2 text-sm font-medium hover:underline">
+            <Link
+              href={`/associations/${asso.slug}`}
+              className="flex items-center gap-2 text-sm font-medium hover:underline"
+            >
               {asso.logo_url && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={asso.logo_url} alt="" className="size-6 rounded-full object-cover" />
@@ -123,7 +124,9 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
 
           {event.status === "cancelled" && (
             <Alert variant="destructive">
-              <AlertDescription>Cet événement a été annulé par l&apos;organisateur.</AlertDescription>
+              <AlertDescription>
+                Cet événement a été annulé par l&apos;organisateur.
+              </AlertDescription>
             </Alert>
           )}
 
@@ -154,7 +157,12 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
           <div className="flex gap-2">
             {asso.instagram_url && (
               <Button variant="outline" size="icon" asChild>
-                <a href={asso.instagram_url} target="_blank" rel="noreferrer" aria-label="Instagram">
+                <a
+                  href={asso.instagram_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                >
                   <Camera />
                 </a>
               </Button>
@@ -177,46 +185,58 @@ export default async function EventPage({ params }: PageProps<"/events/[slug]">)
         </div>
 
         <aside className="lg:sticky lg:top-20 lg:self-start">
-          <Card>
-            <CardHeader>
-              <CardTitle>{shotgunOpen ? "Billetterie" : "Ouverture du shotgun"}</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                {shotgunOpen
-                  ? `${Math.max(0, eventRemaining)} / ${event.capacity} places disponibles`
-                  : formatDateTime(event.shotgun_opens_at)}
-              </p>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {!shotgunOpen && event.status === "published" && (
-                <Countdown target={event.shotgun_opens_at} />
-              )}
+          <Reveal delay={120}>
+            <Card>
+              <CardHeader>
+                <CardTitle>{shotgunOpen ? "Billetterie" : "Ouverture du shotgun"}</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  {shotgunOpen ? (
+                    <>
+                      <CountUp
+                        value={Math.max(0, eventRemaining)}
+                        className="text-foreground font-semibold"
+                      />{" "}
+                      / {event.capacity} places disponibles
+                    </>
+                  ) : (
+                    formatDateTime(event.shotgun_opens_at)
+                  )}
+                </p>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                {!shotgunOpen && event.status === "published" && (
+                  <Countdown target={event.shotgun_opens_at} />
+                )}
 
-              {myOrder ? (
-                myOrder.status === "pending" ? (
-                  <Button size="lg" asChild>
-                    <Link href={`/checkout/${myOrder.id}`}>Finaliser mon paiement</Link>
-                  </Button>
+                {myOrder ? (
+                  myOrder.status === "pending" ? (
+                    <Button size="lg" asChild>
+                      <Link href={`/checkout/${myOrder.id}`}>Finaliser mon paiement</Link>
+                    </Button>
+                  ) : (
+                    <Button size="lg" asChild>
+                      <Link href={myTicket ? `/tickets/${myTicket.id}` : "/tickets"}>
+                        🎟️ Voir mon billet
+                      </Link>
+                    </Button>
+                  )
+                ) : profile ? (
+                  <ReservePanel
+                    eventId={event.id}
+                    slug={event.slug}
+                    options={options}
+                    disabledReason={disabledReason}
+                  />
                 ) : (
                   <Button size="lg" asChild>
-                    <Link href={myTicket ? `/tickets/${myTicket.id}` : "/tickets"}>
-                      🎟️ Voir mon billet
+                    <Link href={`/login?next=/events/${event.slug}`}>
+                      Se connecter pour réserver
                     </Link>
                   </Button>
-                )
-              ) : profile ? (
-                <ReservePanel
-                  eventId={event.id}
-                  slug={event.slug}
-                  options={options}
-                  disabledReason={disabledReason}
-                />
-              ) : (
-                <Button size="lg" asChild>
-                  <Link href={`/login?next=/events/${event.slug}`}>Se connecter pour réserver</Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </Reveal>
         </aside>
       </div>
     </div>

@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CountUp } from "@/components/motion/count-up";
+import { Reveal } from "@/components/motion/reveal";
 import { requireProfile } from "@/lib/auth";
 import { formatDateTime, formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -55,10 +57,20 @@ export default async function EventDashboardPage({ params }: PageProps<"/dashboa
   const revenue = paid.reduce((s, a) => s + a.amount_cents, 0);
 
   const stats = [
-    { label: "Billets confirmés", value: `${confirmed.length} / ${event.capacity}` },
-    { label: "Paniers en cours", value: String(pending) },
-    { label: "Recettes brutes", value: formatPrice(revenue) },
-    { label: "Check-ins", value: String(rows.filter((a) => a.ticket_status === "used").length) },
+    {
+      label: "Billets confirmés",
+      value: (
+        <>
+          <CountUp value={confirmed.length} /> / {event.capacity}
+        </>
+      ),
+    },
+    { label: "Paniers en cours", value: <CountUp value={pending} /> },
+    { label: "Recettes brutes", value: <CountUp value={revenue} format="currency" /> },
+    {
+      label: "Check-ins",
+      value: <CountUp value={rows.filter((a) => a.ticket_status === "used").length} />,
+    },
   ];
 
   return (
@@ -100,7 +112,11 @@ export default async function EventDashboardPage({ params }: PageProps<"/dashboa
                 name="status"
                 value={event.status === "draft" ? "published" : "draft"}
               />
-              <Button size="sm" type="submit" variant={event.status === "draft" ? "default" : "secondary"}>
+              <Button
+                size="sm"
+                type="submit"
+                variant={event.status === "draft" ? "default" : "secondary"}
+              >
                 {event.status === "draft" ? "Publier" : "Repasser en brouillon"}
               </Button>
             </form>
@@ -118,13 +134,15 @@ export default async function EventDashboardPage({ params }: PageProps<"/dashboa
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="gap-1 py-4">
-            <CardHeader className="px-4">
-              <CardDescription>{s.label}</CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 text-2xl font-bold tabular-nums">{s.value}</CardContent>
-          </Card>
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 70}>
+            <Card className="h-full gap-1 py-4">
+              <CardHeader className="px-4">
+                <CardDescription>{s.label}</CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 text-2xl font-bold tabular-nums">{s.value}</CardContent>
+            </Card>
+          </Reveal>
         ))}
       </div>
 
@@ -180,7 +198,12 @@ export default async function EventDashboardPage({ params }: PageProps<"/dashboa
                           <form action={cancelAttendeeOrder}>
                             <input type="hidden" name="order_id" value={a.order_id} />
                             <input type="hidden" name="event_id" value={event.id} />
-                            <Button size="icon" variant="ghost" type="submit" aria-label="Annuler ce billet">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              type="submit"
+                              aria-label="Annuler ce billet"
+                            >
                               <X />
                             </Button>
                           </form>

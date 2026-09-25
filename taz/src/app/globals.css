@@ -83,3 +83,133 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 }
+
+/* ==========================================================================
+   Animations — uniquement transform / opacity (composité GPU, 60 fps).
+   `html.js` est posé par un script inline : sans JS, rien n'est masqué.
+   ========================================================================== */
+
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Apparition au scroll ------------------------------------------------ */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition:
+    opacity 700ms var(--ease-out-expo),
+    transform 700ms var(--ease-out-expo);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.js [data-reveal][data-revealed] {
+  opacity: 1;
+  transform: none;
+}
+
+/* --- Chiffres qui défilent : masqués jusqu'au départ du compteur ---------- */
+.js [data-countup]:not([data-counted]) {
+  opacity: 0;
+}
+[data-countup] {
+  transition: opacity 200ms ease-out;
+}
+
+/* --- Header compact ------------------------------------------------------- */
+[data-header-bg] {
+  transform-origin: top;
+  transition: transform 350ms var(--ease-out-expo), box-shadow 350ms ease;
+}
+[data-header-bar] {
+  transition: transform 350ms var(--ease-out-expo);
+}
+[data-header-logo] {
+  display: inline-block;
+  transform-origin: left center;
+  transition: transform 350ms var(--ease-out-expo);
+}
+[data-header][data-compact] [data-header-bg] {
+  transform: scaleY(0.8125); /* 64px -> 52px */
+  box-shadow: 0 6px 24px -12px oklch(0 0 0 / 0.25);
+}
+[data-header][data-compact] [data-header-bar] {
+  transform: translate3d(0, -6px, 0);
+}
+[data-header][data-compact] [data-header-logo] {
+  transform: scale(0.85);
+}
+
+/* --- Dégradé animé du hero ---------------------------------------------- */
+[data-hero-blob] {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  border-radius: 9999px;
+  opacity: 0.55;
+  will-change: transform;
+}
+[data-hero-blob="1"] {
+  top: -25vmax;
+  left: -15vmax;
+  background: radial-gradient(closest-side, oklch(0.62 0.24 285 / 0.9), transparent);
+  animation: hero-drift-1 18s ease-in-out infinite alternate;
+}
+[data-hero-blob="2"] {
+  top: -20vmax;
+  right: -20vmax;
+  background: radial-gradient(closest-side, oklch(0.7 0.2 340 / 0.75), transparent);
+  animation: hero-drift-2 22s ease-in-out infinite alternate;
+}
+[data-hero-blob="3"] {
+  bottom: -35vmax;
+  left: 20%;
+  background: radial-gradient(closest-side, oklch(0.75 0.15 230 / 0.7), transparent);
+  animation: hero-drift-3 26s ease-in-out infinite alternate;
+}
+@keyframes hero-drift-1 {
+  to { transform: translate3d(18vmax, 10vmax, 0) scale(1.15); }
+}
+@keyframes hero-drift-2 {
+  to { transform: translate3d(-22vmax, 14vmax, 0) scale(0.9); }
+}
+@keyframes hero-drift-3 {
+  to { transform: translate3d(-12vmax, -16vmax, 0) scale(1.2); }
+}
+
+/* --- Effet magnétique ------------------------------------------------------ */
+[data-magnetic] {
+  transition: transform 450ms var(--ease-spring);
+  will-change: transform;
+}
+[data-magnetic][data-magnet-active] {
+  transition: transform 120ms linear;
+}
+
+/* --- Accessibilité : tout est coupé si l'utilisateur le demande ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .js [data-reveal],
+  .js [data-countup]:not([data-counted]) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  [data-hero-blob] {
+    animation: none;
+  }
+  [data-header-bg],
+  [data-header-bar],
+  [data-header-logo],
+  [data-magnetic] {
+    transition: none;
+    transform: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

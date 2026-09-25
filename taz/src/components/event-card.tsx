@@ -22,7 +22,7 @@ export function EventCard({ event }: { event: EventCardData }) {
   return (
     <Link
       href={`/events/${event.slug}`}
-      className="group bg-card overflow-hidden rounded-xl border shadow-sm transition hover:shadow-md"
+      className="group bg-card block h-full overflow-hidden rounded-xl border shadow-sm transition hover:shadow-md"
     >
       <div className="from-primary/80 to-primary/30 relative aspect-[16/9] bg-gradient-to-br">
         {event.cover_url && (

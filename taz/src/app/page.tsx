@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { Flame, ShieldCheck, Ticket } from "lucide-react";
 import { EventCard } from "@/components/event-card";
+import { CountUp } from "@/components/motion/count-up";
+import { HeroGradient } from "@/components/motion/hero-gradient";
+import { Magnetic } from "@/components/motion/magnetic";
+import { Reveal } from "@/components/motion/reveal";
 import { Button } from "@/components/ui/button";
 import { getCurrentProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -11,10 +15,24 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const citySlug = typeof ville === "string" ? ville : null;
 
   const supabase = await createClient();
-  const [profile, { data: cities }] = await Promise.all([
+  const [
+    profile,
+    { data: cities },
+    { count: eventCount },
+    { count: assoCount },
+    { count: schoolCount },
+  ] = await Promise.all([
     getCurrentProfile(),
     supabase.from("cities").select("id, name, slug").order("name"),
+    supabase.from("events").select("id", { count: "exact", head: true }).eq("status", "published"),
+    supabase.from("associations").select("id", { count: "exact", head: true }),
+    supabase.from("schools").select("id", { count: "exact", head: true }),
   ]);
+  const stats = [
+    { label: "événements publiés", value: eventCount ?? 0 },
+    { label: "assos & BDE", value: assoCount ?? 0 },
+    { label: "écoles & campus", value: schoolCount ?? 0 },
+  ];
   const city = cities?.find((c) => c.slug === citySlug) ?? null;
 
   let query = supabase
@@ -33,7 +51,8 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
 
   return (
     <div className="mx-auto grid max-w-6xl gap-10 px-4 py-10">
-      <section className="grid gap-4 text-center sm:py-8">
+      <section className="relative isolate grid gap-4 overflow-hidden rounded-3xl px-4 py-12 text-center sm:py-20">
+        <HeroGradient />
         <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
           Le shotgun, <span className="text-primary">sans le crash.</span>
         </h1>
@@ -42,18 +61,22 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           sécurisé et billet QR code en quelques secondes.
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          {profile ? (
-            <Button size="lg" asChild>
-              <Link href="/dashboard/associations/new">Créer mon asso</Link>
+          <Magnetic>
+            {profile ? (
+              <Button size="lg" asChild>
+                <Link href="/dashboard/associations/new">Créer mon asso</Link>
+              </Button>
+            ) : (
+              <Button size="lg" asChild>
+                <Link href="/signup">Je suis étudiant·e</Link>
+              </Button>
+            )}
+          </Magnetic>
+          <Magnetic>
+            <Button size="lg" variant="outline" className="bg-background/60" asChild>
+              <a href="#events">Voir les événements</a>
             </Button>
-          ) : (
-            <Button size="lg" asChild>
-              <Link href="/signup">Je suis étudiant·e</Link>
-            </Button>
-          )}
-          <Button size="lg" variant="outline" asChild>
-            <a href="#events">Voir les événements</a>
-          </Button>
+          </Magnetic>
         </div>
         <div className="text-muted-foreground mx-auto mt-4 grid max-w-3xl gap-3 text-sm sm:grid-cols-3">
           <span className="flex items-center justify-center gap-2">
@@ -68,13 +91,31 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
         </div>
       </section>
 
+      <section className="grid grid-cols-3 gap-3">
+        {stats.map((s, i) => (
+          <Reveal
+            key={s.label}
+            delay={i * 90}
+            className="bg-card rounded-2xl border p-4 text-center sm:p-6"
+          >
+            <CountUp value={s.value} className="text-3xl font-black sm:text-4xl" />
+            <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{s.label}</p>
+          </Reveal>
+        ))}
+      </section>
+
       <section id="events" className="grid scroll-mt-20 gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-2xl font-bold">Prochains événements</h2>
           <nav className="flex flex-wrap gap-1" aria-label="Filtrer par ville">
             <CityChip href="/#events" active={!city} label="Toutes" />
             {cities?.map((c) => (
-              <CityChip key={c.id} href={`/?ville=${c.slug}#events`} active={city?.id === c.id} label={c.name} />
+              <CityChip
+                key={c.id}
+                href={`/?ville=${c.slug}#events`}
+                active={city?.id === c.id}
+                label={c.name}
+              />
             ))}
           </nav>
         </div>
@@ -85,17 +126,18 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
           </p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {events.map((e) => (
-              <EventCard
-                key={e.slug}
-                event={{
-                  ...e,
-                  association: e.association,
-                  min_price_cents: e.ticket_types.length
-                    ? Math.min(...e.ticket_types.map((t) => t.price_cents))
-                    : null,
-                }}
-              />
+            {events.map((e, i) => (
+              <Reveal key={e.slug} delay={(i % 3) * 90} className="h-full">
+                <EventCard
+                  event={{
+                    ...e,
+                    association: e.association,
+                    min_price_cents: e.ticket_types.length
+                      ? Math.min(...e.ticket_types.map((t) => t.price_cents))
+                      : null,
+                  }}
+                />
+              </Reveal>
             ))}
           </div>
         )}

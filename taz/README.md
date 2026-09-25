@@ -23,6 +23,22 @@ Shotgun équitable, billetterie et organisation d'événements pour les BDE, ass
 | **Contrôle d'entrée** | Scanner QR à la caméra du téléphone (+ saisie du code court à 8 caractères), écran vert / orange « déjà scanné » / rouge, compteur d'entrées. |
 | **Admin** | Statistiques, validation des associations (seul un admin peut vérifier une asso). |
 
+## Animations
+
+Composants dans `src/components/motion/`, styles en bas de `src/app/globals.css` :
+
+| Effet | Où | Comment |
+| --- | --- | --- |
+| Apparition au scroll (fondu + translation) | cartes, stats, listes | `<Reveal delay>` + un seul `IntersectionObserver` partagé |
+| Header qui se compacte | toutes les pages | `HeaderShell` : fond en `scaleY`, logo en `scale`, hauteur de mise en page fixe (aucun saut de contenu) |
+| Dégradé animé du hero | accueil | 3 halos `radial-gradient` qui dérivent en `transform` |
+| Effet magnétique | CTA du hero, « Créer un compte », bouton SHOTGUN | `<Magnetic>` : 1 écriture de style par frame (rAF), souris uniquement |
+| Chiffres qui défilent | stats de l'accueil, places restantes, dashboard orga | `<CountUp>` : easeOutExpo, texte mis à jour dans le DOM sans re-render React |
+
+Seuls `transform` et `opacity` sont animés (composité GPU) : ~60 fps mesurés pendant le scroll.
+Avec **`prefers-reduced-motion: reduce`**, tout est désactivé : contenu visible immédiatement, chiffres finaux, header et boutons fixes, aucun keyframe.
+Sans JavaScript, rien n'est masqué (les états cachés ne s'appliquent que sous `html.js`).
+
 ---
 
 ## Comment l'anti-crash / anti-survente fonctionne

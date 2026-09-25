@@ -6,6 +6,7 @@ import { FormMessage } from "@/components/form-message";
 import { SubmitButton } from "@/components/submit-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Magnetic } from "@/components/motion/magnetic";
 import { formatPrice } from "@/lib/format";
 import { HOLD_MINUTES } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -70,7 +71,9 @@ export function ReservePanel({
                     {o.kind === "member" && <Lock className="text-muted-foreground size-3.5" />}
                   </span>
                   <span className="text-muted-foreground text-xs">
-                    {soldOut ? "Complet" : `${o.remaining} place${o.remaining > 1 ? "s" : ""} restante${o.remaining > 1 ? "s" : ""}`}
+                    {soldOut
+                      ? "Complet"
+                      : `${o.remaining} place${o.remaining > 1 ? "s" : ""} restante${o.remaining > 1 ? "s" : ""}`}
                   </span>
                 </span>
               </span>
@@ -89,14 +92,18 @@ export function ReservePanel({
 
       <FormMessage state={state} />
 
-      <SubmitButton pending={pending}
-        size="lg"
-        disabled={Boolean(disabledReason) || !selectedOption || selectedOption.remaining <= 0}
-        pendingLabel="Réservation en cours…"
-      >
-        {disabledReason ??
-          (selectedOption?.price_cents === 0 ? "Réserver ma place" : "SHOTGUN 🔥")}
-      </SubmitButton>
+      <Magnetic strength={0.15} className="w-full">
+        <SubmitButton
+          pending={pending}
+          size="lg"
+          className="w-full"
+          disabled={Boolean(disabledReason) || !selectedOption || selectedOption.remaining <= 0}
+          pendingLabel="Réservation en cours…"
+        >
+          {disabledReason ??
+            (selectedOption?.price_cents === 0 ? "Réserver ma place" : "SHOTGUN 🔥")}
+        </SubmitButton>
+      </Magnetic>
       {selectedOption && selectedOption.price_cents > 0 && !disabledReason && (
         <p className="text-muted-foreground text-center text-xs">
           Ta place est bloquée {HOLD_MINUTES} minutes le temps de payer.

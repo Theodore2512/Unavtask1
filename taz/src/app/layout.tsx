@@ -20,7 +20,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr">
+    // suppressHydrationWarning : la classe "js" est ajoutée avant l'hydratation.
+    <html lang="fr" suppressHydrationWarning>
+      <head>
+        <script
+          // Active les animations d'apparition seulement si JS tourne (sinon tout reste visible).
+          dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }}
+        />
+      </head>
       <body className="flex min-h-dvh flex-col">
         <SiteHeader />
         <main className="flex-1">{children}</main>

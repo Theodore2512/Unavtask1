@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus, Users } from "lucide-react";
+import { Reveal } from "@/components/motion/reveal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { requireProfile } from "@/lib/auth";
@@ -37,15 +38,19 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
-          {memberships.map(({ role, association }) => (
-            <li key={association.id}>
+          {memberships.map(({ role, association }, i) => (
+            <Reveal as="li" key={association.id} delay={Math.min(i, 5) * 70}>
               <Link
                 href={`/dashboard/associations/${association.id}`}
                 className="bg-card flex items-center gap-4 rounded-xl border p-4 transition hover:shadow-md"
               >
                 {association.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={association.logo_url} alt="" className="size-12 rounded-full object-cover" />
+                  <img
+                    src={association.logo_url}
+                    alt=""
+                    className="size-12 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="bg-primary/15 text-primary grid size-12 place-items-center rounded-full font-bold">
                     {association.name.slice(0, 2).toUpperCase()}
@@ -60,7 +65,7 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </Link>
-            </li>
+            </Reveal>
           ))}
         </ul>
       )}
